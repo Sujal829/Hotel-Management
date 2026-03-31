@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Plus, 
-    Trash2, 
-    Users, 
-    Armchair, 
-    LayoutGrid, 
-    Save, 
+import {
+    Plus,
+    Trash2,
+    Users,
+    Armchair,
+    LayoutGrid,
+    Save,
     X,
     ChevronDown,
     MoreHorizontal
@@ -36,7 +36,7 @@ const AdminTables = () => {
     const addTable = async () => {
         if (!newTable.number) return;
         try {
-            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/tables`, newTable);
+            await axios.post(`/api/tables`, newTable);
             setIsAddOpen(false);
             setNewTable({ number: '', capacity: 4 });
             fetchTables();
@@ -48,7 +48,7 @@ const AdminTables = () => {
     const updateTable = async () => {
         if (!editTable?._id) return;
         try {
-            await axios.put(`${import.meta.env.VITE_API_BASE_URL}/tables/${editTable._id}`, {
+            await axios.put(`/api//tables/${editTable._id}`, {
                 number: Number(editTable.number),
                 capacity: Number(editTable.capacity),
             });
@@ -63,7 +63,7 @@ const AdminTables = () => {
     const deleteTable = async (id) => {
         if (!window.confirm("Are you sure you want to remove this table?")) return;
         try {
-            await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/tables/${id}`);
+            await axios.delete(`/api//tables/${id}`);
             fetchTables();
         } catch (err) {
             console.error("Delete table error:", err);
@@ -77,7 +77,7 @@ const AdminTables = () => {
                     <h2 className="text-4xl font-black tracking-tight text-on-surface mb-2">Dining Floor Topology</h2>
                     <p className="text-on-surface-variant max-w-xl">Configure your seating arrangement. Current Capacity: {tables.reduce((acc, t) => acc + t.capacity, 0)} Guests across {tables.length} Tables.</p>
                 </div>
-                <button 
+                <button
                     onClick={() => setIsAddOpen(true)}
                     className="bg-primary text-on-primary px-8 py-4 rounded-full font-bold shadow-lg shadow-primary/20 flex items-center gap-2 active:scale-95 transition-transform"
                 >
@@ -89,7 +89,7 @@ const AdminTables = () => {
             {/* Tables Bento Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
                 {tables.map((table) => (
-                    <motion.div 
+                    <motion.div
                         key={table._id}
                         layout
                         whileHover={{ y: -5 }}
@@ -123,7 +123,7 @@ const AdminTables = () => {
                             >
                                 <Edit3 size={20} />
                             </button>
-                            <button 
+                            <button
                                 onClick={() => deleteTable(table._id)}
                                 className="bg-red-50 p-3 rounded-full text-red-600 shadow-sm hover:scale-110 transition-transform"
                             >
@@ -134,7 +134,7 @@ const AdminTables = () => {
                 ))}
 
                 {/* Add Table Skeleton */}
-                <div 
+                <div
                     onClick={() => setIsAddOpen(true)}
                     className="border-2 border-dashed border-outline-variant/30 rounded-[2rem] p-6 flex flex-col items-center justify-center text-on-surface-variant opacity-40 hover:opacity-100 hover:bg-primary/5 transition-all cursor-pointer group"
                 >
@@ -147,14 +147,14 @@ const AdminTables = () => {
             <AnimatePresence>
                 {isAddOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsAddOpen(false)}
                             className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm"
                         ></motion.div>
-                        <motion.div 
+                        <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
@@ -162,25 +162,25 @@ const AdminTables = () => {
                         >
                             <h3 className="text-3xl font-black text-on-surface mb-2">New Table</h3>
                             <p className="text-on-surface-variant mb-8">Define the floor coordinates and seating capacity.</p>
-                            
+
                             <div className="space-y-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">Table Number</label>
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         className="w-full bg-surface-container-highest border-none rounded-2xl px-6 py-4 font-bold text-xl"
                                         placeholder="e.g. 15"
                                         value={newTable.number}
-                                        onChange={(e) => setNewTable({...newTable, number: e.target.value})}
+                                        onChange={(e) => setNewTable({ ...newTable, number: e.target.value })}
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">Guest Capacity</label>
                                     <div className="flex gap-4">
                                         {[2, 4, 6, 8].map(cap => (
-                                            <button 
+                                            <button
                                                 key={cap}
-                                                onClick={() => setNewTable({...newTable, capacity: cap})}
+                                                onClick={() => setNewTable({ ...newTable, capacity: cap })}
                                                 className={`flex-1 py-4 rounded-xl font-bold transition-all ${newTable.capacity === cap ? 'bg-primary text-white scale-105 shadow-md' : 'bg-surface-container-high text-on-surface-variant'}`}
                                             >
                                                 {cap}
@@ -189,7 +189,7 @@ const AdminTables = () => {
                                     </div>
                                 </div>
                                 <div className="pt-6 flex gap-4">
-                                    <button 
+                                    <button
                                         onClick={addTable}
                                         className="flex-1 bg-primary text-white py-5 rounded-full font-bold shadow-lg shadow-primary/20 active:scale-95 transition-transform flex items-center justify-center gap-2"
                                     >
@@ -280,7 +280,7 @@ const AdminTables = () => {
 
 // Helper for Edit icon
 const Edit3 = ({ size }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
 );
 
 export default AdminTables;

@@ -1,22 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { 
-    ShoppingBag, 
-    TrendingUp, 
-    Users, 
-    Armchair, 
+import {
+    ShoppingBag,
+    TrendingUp,
+    Users,
+    Armchair,
     ChevronRight,
     Search
 } from 'lucide-react';
 import io from 'socket.io-client';
+import { useNavigate } from 'react-router-dom';
 
 const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000');
-
 const AdminDashboard = () => {
-    const [stats, setStats] = useState({ 
-        liveOrders: 0, 
-        revenue: 0, 
+    const navigate = useNavigate();
+    const [stats, setStats] = useState({
+        liveOrders: 0,
+        revenue: 0,
         occupiedPercent: 0,
         pending: 0,
         preparing: 0,
@@ -29,8 +30,8 @@ const AdminDashboard = () => {
         const fetchData = async () => {
             try {
                 const [ordersRes, tablesRes] = await Promise.all([
-                    axios.get(`${import.meta.env.VITE_API_BASE_URL}/orders`),
-                    axios.get(`${import.meta.env.VITE_API_BASE_URL}/tables`)
+                    axios.get(`/api/orders`),
+                    axios.get(`/api/tables`)
                 ]);
 
                 const orders = ordersRes.data;
@@ -101,7 +102,7 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                     <div className="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden mt-6">
-                        <motion.div 
+                        <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${stats.occupiedPercent}%` }}
                             className="bg-secondary h-full rounded-full"
@@ -128,10 +129,10 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                     {tables.map(table => (
-                        <motion.div 
+                        <motion.div
                             key={table._id}
                             whileHover={{ y: -5 }}
                             className={`bg-surface-container-lowest p-6 rounded-3xl shadow-sm border transition-all duration-300 group cursor-pointer ${table.status === 'Busy' ? 'border-l-4 border-l-primary' : 'border-outline-variant/10'}`}
@@ -178,13 +179,12 @@ const AdminDashboard = () => {
                                 </div>
                                 <p className="text-sm text-on-surface-variant mb-4">{order.items.length} items total</p>
                                 <div className="flex justify-between items-center">
-                                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded ${
-                                        order.status === 'Pending' ? 'bg-amber-100 text-amber-900' : 
+                                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded ${order.status === 'Pending' ? 'bg-amber-100 text-amber-900' :
                                         order.status === 'Preparing' ? 'bg-blue-100 text-blue-900' : 'bg-green-100 text-green-900'
-                                    }`}>
+                                        }`}>
                                         {order.status}
                                     </span>
-                                    <button className="bg-primary hover:bg-primary-container text-on-primary px-4 py-1 rounded-full text-xs font-bold transition-colors">
+                                    <button className="bg-primary hover:bg-primary-container text-on-primary px-4 py-1 rounded-full text-xs font-bold transition-colors" onClick={() => navigate('/admin/orders')}>
                                         Update Status
                                     </button>
                                 </div>
