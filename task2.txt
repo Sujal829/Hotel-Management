@@ -1,0 +1,104 @@
+# Role: Senior Full-Stack Engineer
+
+# Task: Implement Multi-Tenant Architecture for "Zestful" Digital Menu & Ordering System
+
+## Objective
+
+Refactor the current codebase to support multiple independent Admin accounts. Each Admin must only be able to see/manage their own Menu, Categories, and Orders. Users (Diners) must be able to view a specific Admin's menu via a unique ID or Slug in the URL.
+
+## Technical Requirements
+
+### 1. Database Schema Updates (Mongoose)
+
+- Add an `adminId` (ref: 'User') field to `Menu`, `Category`, `Table`, and `Order` models.
+- Ensure `adminId` is required and indexed for performance.
+- Update the `Order` model to include `adminId` so it routes to the correct dashboard.
+
+### 2. Backend Logic (Node.js/Express)
+
+- **Middleware:** Ensure `adminAuth` injects `req.user.id` into all requests.
+- **Admin Routes:** Modify all Admin GET/POST/PUT/DELETE routes (Menu, Orders, Tables) to filter by `adminId: req.user.id`.
+- **Public Routes:** Create a new endpoint `GET /api/menu/public/:adminId` that allows diners to fetch a specific menu without authentication.
+- **Security:** Implement a check to ensure an Admin cannot update/delete data belonging to another `adminId`.
+
+### 3. Frontend Routing (React)
+
+- **User Side:** Change the menu route from `/menu` to `/menu/:adminId`.
+- **Logic:** In `UserMenu.jsx`, use `useParams` to grab the `adminId` and pass it to all API calls.
+- **State Management:** Ensure the `adminId` is attached to the Order object before it is sent to the backend.
+
+### 4. Image Handling
+
+- Update Multer storage to organize uploads into subfolders named after the `adminId` (e.g., `/uploads/{adminId}/filename.png`) to prevent collisions.
+
+---
+# Role: Senior Full-Stack Engineer
+
+# Task: Implement Multi-Tenant Architecture for "Zestful" Digital Menu & Ordering System
+
+## Objective
+
+Refactor the current codebase to support multiple independent Admin accounts. Each Admin must only be able to see/manage their own Menu, Categories, and Orders. Users (Diners) must be able to view a specific Admin's menu via a unique ID or Slug in the URL.
+
+## Technical Requirements
+
+### 1. Database Schema Updates (Mongoose)
+
+- Add an `adminId` (ref: 'User') field to `Menu`, `Category`, `Table`, and `Order` models.
+- Ensure `adminId` is required and indexed for performance.
+- Update the `Order` model to include `adminId` so it routes to the correct dashboard.
+
+### 2. Backend Logic (Node.js/Express)
+
+- **Middleware:** Ensure `adminAuth` injects `req.user.id` into all requests.
+- **Admin Routes:** Modify all Admin GET/POST/PUT/DELETE routes (Menu, Orders, Tables) to filter by `adminId: req.user.id`.
+- **Public Routes:** Create a new endpoint `GET /api/menu/public/:adminId` that allows diners to fetch a specific menu without authentication.
+- **Security:** Implement a check to ensure an Admin cannot update/delete data belonging to another `adminId`.
+
+### 3. Frontend Routing (React)
+
+- **User Side:** Change the menu route from `/menu` to `/menu/:adminId`.
+- **Logic:** In `UserMenu.jsx`, use `useParams` to grab the `adminId` and pass it to all API calls.
+- **State Management:** Ensure the `adminId` is attached to the Order object before it is sent to the backend.
+
+### 4. Image Handling
+
+- Update Multer storage to organize uploads into subfolders named after the `adminId` (e.g., `/uploads/{adminId}/filename.png`) to prevent collisions.
+
+---
+
+## Deliverables
+
+1. Updated Mongoose Models.
+2. Refactored Express routes with ownership filtering.
+3. Updated React components (AdminOrders, AdminMenu, UserMenu).
+4. A set of unit/integration tests for validation.
+
+---
+
+## Validation & Test Cases
+
+Please provide code for the following test scenarios:
+
+1. **Isolation Test:** Verify that `Admin_A` receives a 404 or empty array when trying to access `Order_ID` belonging to `Admin_B`.
+2. **Public Access Test:** Verify that a User can fetch a menu using a valid `adminId` without being logged in.
+3. **Data Integrity Test:** Verify that when `Admin_A` creates a new Dish, the `adminId` is automatically and correctly saved from the JWT token.
+4. **Order Routing Test:** Verify that an order placed on `/menu/Admin_A` only appears on the Socket.io feed of `Admin_A`.
+
+## Deliverables
+
+1. Updated Mongoose Models.
+2. Refactored Express routes with ownership filtering.
+3. Updated React components (AdminOrders, AdminMenu, UserMenu).
+4. A set of unit/integration tests for validation.
+
+---
+
+## Validation & Test Cases
+
+Please provide code for the following test scenarios:
+
+1. **Isolation Test:** Verify that `Admin_A` receives a 404 or empty array when trying to access `Order_ID` belonging to `Admin_B`.
+2. **Public Access Test:** Verify that a User can fetch a menu using a valid `adminId` without being logged in.
+3. **Data Integrity Test:** Verify that when `Admin_A` creates a new Dish, the `adminId` is automatically and correctly saved from the JWT token.
+4. **Order Routing Test:** Verify that an order placed on `/menu/Admin_A` only appears on the Socket.io feed of `Admin_A`.

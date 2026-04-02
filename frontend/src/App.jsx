@@ -13,6 +13,7 @@ import TableSelection from './pages/TableSelection';
 import OrderSuccess from './pages/OrderSuccess';
 import OrderTracking from './pages/OrderTracking';
 import ProfilePage from './pages/ProfilePage';
+import UserMenu from './pages/UserMenu';
 
 // Admin Pages
 import AdminLoginPage from './pages/admin/AdminLoginPage';
@@ -35,6 +36,7 @@ const AppContent = () => {
   const location = useLocation();
   const isAdminPath = location.pathname.startsWith('/admin');
   const isAuthPath = location.pathname.includes('/login') || location.pathname.includes('/verify-otp');
+  const isPublicMenu = location.pathname.startsWith('/menu/');
 
   useEffect(() => {
     dispatch(loadUser());
@@ -49,6 +51,7 @@ const AppContent = () => {
     const socket = io(socketURL);
     
     if (user.role === 'admin') {
+      socket.emit('join_admin', user._id);
       socket.on('newOrder', (order) => {
          if (order && order._id) {
            toast.success(`New Order #${order._id.slice(-6).toUpperCase()} received at Table ${order.tableNumber}!`);
@@ -97,20 +100,21 @@ const AppContent = () => {
   return (
     <div className="app-container relative">
       <Toaster position="top-right" duration={3000} />
-      {!isAdminPath && isAuthenticated && user?.role === 'user' && <Navbar />}
-      {!isAdminPath && isAuthenticated && user?.role === 'user' && <BottomNav />}
+      {!isAdminPath && !isAuthPath && (isAuthenticated || isPublicMenu) && <Navbar />}
+      {!isAdminPath && !isAuthPath && (isAuthenticated || isPublicMenu) && <BottomNav />}
       <CartDrawer />
       <Routes>
         {/* User Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/verify-otp" element={<OTPPage />} />
+        <Route path="/menu/:adminId" element={<UserMenu />} />
         
         {/* Protected User Routes */}
-        <Route path="/" element={isAuthenticated ? (user?.role === 'admin' ? <Navigate to="/admin" /> : <Dashboard />) : <Navigate to="/login" />} />
-        <Route path="/select-table" element={isAuthenticated ? <TableSelection /> : <Navigate to="/login" />} />
-        <Route path="/order-success" element={isAuthenticated ? <OrderSuccess /> : <Navigate to="/login" />} />
-        <Route path="/track-order" element={isAuthenticated ? <OrderTracking /> : <Navigate to="/login" />} />
-        <Route path="/profile" element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" />} />
+        <Route path="/" element={isAuthenticated ? (user?.role === 'admin' ? <Navigate to="/admin" /> : <Dashboard />) : <Navigate to="/login" state={{ from: location }} replace />} />
+        <Route path="/select-table" element={isAuthenticated ? <TableSelection /> : <Navigate to="/login" state={{ from: location }} replace />} />
+        <Route path="/order-success" element={isAuthenticated ? <OrderSuccess /> : <Navigate to="/login" state={{ from: location }} replace />} />
+        <Route path="/track-order" element={isAuthenticated ? <OrderTracking /> : <Navigate to="/login" state={{ from: location }} replace />} />
+        <Route path="/profile" element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" state={{ from: location }} replace />} />
         
         {/* Admin Auth */}
         <Route path="/admin/login" element={<AdminLoginPage />} />

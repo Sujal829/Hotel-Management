@@ -6,6 +6,11 @@ const userSchema = new mongoose.Schema({
     email: { type: String }, // For admin
     avatarUrl: { type: String, default: '' },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
+
+    // OTP Storage Fields
+    otp: { type: String, default: null },
+    otpExpires: { type: Date, default: null },
+
     orderHistory: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }],
     createdAt: { type: Date, default: Date.now }
 });

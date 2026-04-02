@@ -2,105 +2,155 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
+const { z } = require('zod');
 
-const OTP_VALUE = process.env.DEV_OTP || '0000';
+// --- Helper Functions ---
+
+const generateRandomOTP = () => {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+};
 
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 };
 
 const generateTempToken = (payload) => {
-    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '5m' });
+    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '10m' });
 };
 
 const sendToken = (user, statusCode, res) => {
     const token = generateToken(user._id);
     const cookieOptions = {
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         httpOnly: true,
+        // Set to false in .env for local testing if not using HTTPS
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'Lax',
     };
     res.cookie('jwt', token, cookieOptions);
+    // Remove sensitive data before sending
+    user.otp = undefined;
+    user.otpExpires = undefined;
     res.status(statusCode).json({ user });
 };
 
-const { z } = require('zod');
-
 const otpRequestSchema = z.object({
     role: z.enum(['user', 'admin']).optional().default('user'),
-    name: z.string().min(2, 'Name is required and must be at least 2 characters'),
-    mobile: z.string().min(10, 'Mobile number is required and must be valid'),
+    name: z.string().min(2, 'Name is required'),
+    mobile: z.string().min(10, 'Valid mobile number is required'),
     email: z.string().email('Invalid email').optional().or(z.literal(''))
 });
 
-// Request OTP (returns a temp token for the OTP phase)
+// --- Routes ---
+
+/**
+ * @route   POST /api/auth/request-otp
+ */
 router.post('/request-otp', async (req, res) => {
     try {
         const validated = otpRequestSchema.parse(req.body);
         const { role, name, mobile, email } = validated;
 
-        if (role === 'admin' && !email) return res.status(400).json({ message: 'Email is required for admin' });
-
-        // Mock provider: log OTP to console. Structure kept for SMS providers (e.g., Twilio).
-        console.log(`[AUTH] OTP for ${mobile} (${role}): ${OTP_VALUE}`);
-
-        const tempToken = generateTempToken({ role, name, mobile, email });
-        res.status(200).json({ message: 'OTP sent', tempToken });
-    } catch (err) {
-        if (err instanceof z.ZodError) {
-            return res.status(400).json({ message: err.errors[0].message });
+        if (role === 'admin' && !email) {
+            return res.status(400).json({ message: 'Email is required for admin' });
         }
+
+        const currentOtp = generateRandomOTP();
+
+        // --- 1 MINUTE VALIDATION ---
+        const otpExpires = new Date(Date.now() + 1 * 60 * 1000); // Changed to 1 Minute
+
+        const updatedUser = await User.findOneAndUpdate(
+            { mobile },
+            {
+                otp: currentOtp,
+                otpExpires: otpExpires,
+                name,
+                role,
+                email: email || undefined
+            },
+            { upsert: true, returnDocument: 'after' }
+        );
+
+        // --- FLEXIBLE CLOCK LOGGING ---
+        // This helper handles both 12hr and 24hr strings for clear debugging
+        const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+        const timeOptions24 = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+
+        console.log(`\n=========================================`);
+        console.log(`[AUTH] DB-STORED OTP FOR ${mobile}: ${updatedUser.otp}`);
+        console.log(`[AUTH] EXPIRES (12hr): ${otpExpires.toLocaleTimeString('en-US', timeOptions)}`);
+        console.log(`[AUTH] EXPIRES (24hr): ${otpExpires.toLocaleTimeString('en-GB', timeOptions24)}`);
+        console.log(`=========================================\n`);
+
+        const tempToken = generateTempToken({ mobile });
+        res.status(200).json({ message: 'OTP sent successfully (Valid for 60s)', tempToken });
+    } catch (err) {
+        if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+        console.error("OTP Request Error:", err);
         res.status(500).json({ message: 'Server error' });
     }
 });
-
+/**
+ * @route   POST /api/auth/verify-otp
+ */
 router.post('/verify-otp', async (req, res) => {
-    const { otp, tempToken, mobile: legacyMobile, role: legacyRole, name: legacyName, email: legacyEmail } = req.body || {};
-    if (!otp) return res.status(400).json({ message: 'OTP is required' });
+    // 1. Log what the backend actually received
+    console.log("RECV BODY:", req.body);
 
-    // Allow both 0000 (required by QA) and legacy 000000 (for older UI)
-    const isOtpValid = otp === OTP_VALUE || otp === '000000';
-    if (!isOtpValid) return res.status(400).json({ message: 'Invalid OTP' });
+    const { otp, tempToken } = req.body || {};
+
+    if (!otp || !tempToken) {
+        return res.status(400).json({ message: 'OTP and Session Token are required' });
+    }
 
     try {
-        let payload = null;
-        if (tempToken) {
-            payload = jwt.verify(tempToken, process.env.JWT_SECRET);
-        } else {
-            // Backward compatibility if frontend still sends fields directly
-            payload = { role: legacyRole || 'user', name: legacyName || 'New User', mobile: legacyMobile, email: legacyEmail };
+        // 2. Verify the temporary JWT
+        const payload = jwt.verify(tempToken, process.env.JWT_SECRET);
+        const mobile = payload.mobile;
+
+        // 3. Find User
+        const user = await User.findOne({ mobile });
+
+        if (!user || !user.otp) {
+            return res.status(400).json({ message: 'No active OTP request found.' });
         }
 
-        if (!payload?.mobile) return res.status(400).json({ message: 'Mobile number is required' });
-        if (!payload?.name) return res.status(400).json({ message: 'Name is required' });
-        if (payload.role === 'admin' && !payload.email) return res.status(400).json({ message: 'Email is required for admin' });
+        // 4. Strict Normalization
+        const inputOtp = String(otp).trim();
+        const dbOtp = String(user.otp).trim();
+        const isMatch = inputOtp === dbOtp;
+        const isExpired = Date.now() > new Date(user.otpExpires).getTime();
 
-        let user = await User.findOne({ mobile: payload.mobile });
-        if (!user) {
-            user = await User.create({
-                mobile: payload.mobile,
-                name: payload.name,
-                email: payload.email,
-                role: payload.role || 'user',
-            });
-        } else {
-            // Keep profile details up-to-date on subsequent logins
-            user.name = payload.name || user.name;
-            if (payload.role === 'admin') user.email = payload.email || user.email;
-            if (payload.role) user.role = payload.role;
-            await user.save();
+        console.log(`[VERIFY] Match: ${isMatch} | Expired: ${isExpired}`);
+
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid OTP code' });
         }
+
+        if (isExpired) {
+            return res.status(400).json({ message: 'OTP has expired' });
+        }
+
+        // 5. Success
+        user.otp = undefined;
+        user.otpExpires = undefined;
+        await user.save();
 
         sendToken(user, 200, res);
+
     } catch (err) {
-        res.status(500).json({ message: 'Verification failed' });
+        console.error("JWT/VERIFY ERROR:", err.message);
+        return res.status(400).json({ message: 'Session invalid or expired' });
     }
 });
 
+/**
+ * @route   POST /api/auth/logout
+ */
 router.post('/logout', (req, res) => {
     res.cookie('jwt', '', {
-        expires: new Date(Date.now() + 10 * 1000),
+        expires: new Date(0),
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'Lax',
@@ -108,16 +158,19 @@ router.post('/logout', (req, res) => {
     res.status(200).json({ message: 'Logged out' });
 });
 
+/**
+ * @route   GET /api/auth/me
+ */
 router.get('/me', async (req, res) => {
     const token = req.cookies.jwt;
     if (!token) return res.status(401).json({ message: 'Not logged in' });
-
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id);
+        const user = await User.findById(decoded.id).select('-otp -otpExpires');
+        if (!user) return res.status(404).json({ message: 'User not found' });
         res.status(200).json({ user });
     } catch (err) {
-        res.status(401).json({ message: 'Invalid token' });
+        res.status(401).json({ message: 'Invalid session' });
     }
 });
 

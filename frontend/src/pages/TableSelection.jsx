@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clearCart } from '../slices/cartSlice';
-import { ArrowLeft, Users, Check, Sparkles } from 'lucide-react';
+import { ArrowLeft, Users, Check, Sparkles, MapPin, ReceiptText } from 'lucide-react';
 
 const TableSelection = () => {
     const [tables, setTables] = useState([]);
     const [selectedTable, setSelectedTable] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [activeOrder, setActiveOrder] = useState(undefined); // undefined = still checking
+    const [activeOrder, setActiveOrder] = useState(undefined);
     const { items } = useSelector(state => state.cart);
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -18,7 +18,6 @@ const TableSelection = () => {
     const total = items.reduce((sum, item) => sum + item.finalPrice * item.quantity, 0);
 
     useEffect(() => {
-        // 1. Check for an active (open) order first
         const checkActiveOrder = async () => {
             try {
                 const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/orders/active`);
@@ -29,7 +28,6 @@ const TableSelection = () => {
         };
         checkActiveOrder();
 
-        // 2. Also fetch tables for the new-order path
         const fetchTables = async () => {
             try {
                 const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/tables`);
@@ -41,7 +39,6 @@ const TableSelection = () => {
         fetchTables();
     }, []);
 
-    // Reorder: add items to existing active order (no table selection)
     const handleReorder = async () => {
         if (!activeOrder) return;
         setLoading(true);
@@ -59,7 +56,6 @@ const TableSelection = () => {
         }
     };
 
-    // New order: normal table selection flow
     const handlePlaceOrder = async () => {
         if (!selectedTable) return;
         setLoading(true);
@@ -79,205 +75,223 @@ const TableSelection = () => {
     };
 
     return (
-        <div className="min-h-screen bg-surface p-6 flex flex-col gap-6" style={{ position: 'relative' }}>
-            <header className="flex items-center justify-between py-4">
-                <button onClick={() => navigate('/')} style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--surface-container-low)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none' }}>
-                    <ArrowLeft size={24} color="var(--on-surface)" />
+        <div className="min-h-screen bg-surface" style={{ paddingBottom: '100px' }}>
+            {/* Header */}
+            <header style={{
+                padding: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                position: 'sticky',
+                top: 0,
+                zIndex: 50,
+                background: 'rgba(var(--surface-rgb), 0.8)',
+                backdropFilter: 'blur(10px)'
+            }}>
+                <button onClick={() => navigate('/')} style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'var(--surface-container-low)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
+                    <ArrowLeft size={20} color="var(--on-surface)" />
                 </button>
                 <div style={{ textAlign: 'center' }}>
-                    <h1 className="title-lg" style={{ margin: 0, fontWeight: 800 }}>{activeOrder ? 'Add to Session' : 'Table Selection'}</h1>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)', letterSpacing: '0.1em' }}>Phase 02/03</span>
+                    <h1 style={{ fontSize: '1.125rem', fontWeight: 900, margin: 0, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        {activeOrder ? 'Sync with Table' : 'Choose Your Spot'}
+                    </h1>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                        <div style={{ width: '12px', height: '2px', background: 'var(--primary)' }}></div>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>Step 02 of 03</span>
+                        <div style={{ width: '12px', height: '2px', background: 'var(--outline-variant)' }}></div>
+                    </div>
                 </div>
-                <div style={{ width: '48px' }}></div>
+                <div style={{ width: '44px' }}></div>
             </header>
 
-            {/* Loading while checking active order */}
             {activeOrder === undefined && (
-                <div className="flex flex-1 items-center justify-center py-20">
-                    <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                <div style={{ display: 'flex', height: '60vh', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="loader-spin" style={{ width: '32px', height: '32px', border: '3px solid var(--surface-container-high)', borderTopColor: 'var(--primary)', borderRadius: '50%' }}></div>
                 </div>
             )}
 
-            {/* Active Session Detected: Skip table selection */}
+            {/* CASE 1: ACTIVE SESSION */}
             {activeOrder !== undefined && activeOrder !== null && (
-                <main style={{ maxWidth: '600px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <main style={{ maxWidth: '500px', margin: '0 auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                        style={{ background: 'var(--primary)', borderRadius: '2.5rem', padding: '2rem', color: 'white', overflow: 'hidden', position: 'relative' }}
                         className="editorial-shadow"
-                        style={{ background: 'var(--primary)', borderRadius: '2.5rem', padding: '2.5rem', color: 'white', position: 'relative', overflow: 'hidden' }}
                     >
-                        <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '160px', height: '160px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }}></div>
-                        <p style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.15em', opacity: 0.7, marginBottom: '1rem' }}>ACTIVE SESSION DETECTED</p>
-                        <h2 style={{ fontSize: '2rem', fontWeight: 900, color: 'white', margin: '0 0 0.5rem' }}>Table {activeOrder.tableNumber}</h2>
-                        <p style={{ opacity: 0.85, fontSize: '0.95rem', fontWeight: 600 }}>
-                            You already have an open order on this table.<br/>Your new items will be added to your current bill.
-                        </p>
-                        <div style={{ marginTop: '1.5rem', background: 'rgba(255,255,255,0.15)', borderRadius: '1rem', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontWeight: 700, opacity: 0.85 }}>Existing Bill</span>
-                            <span style={{ fontWeight: 900, fontSize: '1.25rem' }}>₹{activeOrder.totalAmount}</span>
+                        <div style={{ position: 'absolute', right: '-20px', top: '-20px', opacity: 0.1 }}>
+                            <ReceiptText size={150} />
                         </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.2)', padding: '4px 12px', borderRadius: 'full', width: 'fit-content', marginBottom: '1rem' }}>
+                            <Sparkles size={12} />
+                            <span style={{ fontSize: '0.65rem', fontWeight: 900 }}>LIVE SESSION</span>
+                        </div>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 900, margin: '0 0 0.5rem' }}>Table {activeOrder.tableNumber}</h2>
+                        <p style={{ fontSize: '0.9rem', fontWeight: 600, opacity: 0.9, lineHeight: '1.4' }}>
+                            Found your open bill! We'll tuck these new items right into your current order.
+                        </p>
                     </motion.div>
 
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                        className="editorial-shadow"
-                        style={{ background: 'var(--surface-container-lowest)', borderRadius: '2rem', padding: '1.5rem 2rem' }}
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                        style={{ background: 'var(--surface-container-lowest)', borderRadius: '2rem', padding: '1.5rem', border: '1px solid var(--surface-container-low)' }}
                     >
-                        <h3 style={{ fontWeight: 800, marginBottom: '1rem', fontSize: '1rem' }}>Items Being Added Now</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                        <h3 style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--on-surface-variant)', textTransform: 'uppercase', marginBottom: '1.25rem', letterSpacing: '1px' }}>New Additions</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {items.map(item => (
                                 <div key={item._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{item.name || item.dishName} × {item.quantity}</span>
-                                    <span style={{ fontWeight: 800, color: 'var(--primary)' }}>₹{(item.finalPrice * item.quantity).toFixed(0)}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--surface-container-high)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem' }}>
+                                            {item.quantity}x
+                                        </div>
+                                        <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{item.name || item.dishName}</span>
+                                    </div>
+                                    <span style={{ fontWeight: 800 }}>₹{(item.finalPrice * item.quantity).toFixed(0)}</span>
                                 </div>
                             ))}
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid var(--outline-variant)', paddingTop: '1rem' }}>
-                            <span style={{ fontWeight: 800 }}>New Total Bill</span>
-                            <span style={{ fontWeight: 900, fontSize: '1.25rem', color: 'var(--primary)' }}>₹{(activeOrder.totalAmount + total).toFixed(0)}</span>
+                        <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '2px dashed var(--outline-variant)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 800, color: 'var(--on-surface-variant)' }}>Extra to Bill</span>
+                            <span style={{ fontWeight: 900, fontSize: '1.5rem', color: 'var(--primary)' }}>₹{total}</span>
                         </div>
                     </motion.div>
 
                     <button
                         onClick={handleReorder}
-                        className="btn-primary"
-                        style={{ width: '100%', padding: '1.25rem', borderRadius: '1.75rem', fontSize: '1rem' }}
-                        disabled={loading || items.length === 0}
+                        style={{
+                            width: '100%', padding: '1.25rem', borderRadius: '1.5rem', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 900, cursor: 'pointer',
+                            boxShadow: '0 8px 25px rgba(var(--primary-rgb), 0.3)'
+                        }}
+                        disabled={loading}
                     >
-                        {loading ? 'Adding to Your Order...' : `Add ₹${total} to Table ${activeOrder.tableNumber}`}
+                        {loading ? 'Adding...' : 'Confirm & Add to Bill'}
                     </button>
                 </main>
             )}
 
-            {/* No Active Session: Show full table selection grid */}
+            {/* CASE 2: TABLE SELECTION */}
             {activeOrder !== undefined && activeOrder === null && (
-            <main style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ maxWidth: '500px' }}>
-                        <h2 className="display-sm" style={{ marginBottom: '1rem' }}>A <span style={{ color: 'var(--primary)' }}>Perfect Spot</span> for Every Occasions</h2>
-                        <p className="body-md">Whether it's a quiet solo breakfast or a grand family feast, choose the canvas that suits your mood.</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--surface-container-low)', padding: '8px 16px', borderRadius: 'var(--radius-full)' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)' }}></div>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>RESERVED</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--surface-container-low)', padding: '8px 16px', borderRadius: 'var(--radius-full)' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4CAF50' }}></div>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>AVAILABLE</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(5, 1fr)', 
-                    gap: '1.5rem' 
-                }}>
-                    {tables.map((table, index) => {
-                        const isAvailable = table.status === 'Available';
-                        const isSelected = selectedTable?._id === table._id;
-                        
-                        return (
-                            <motion.div
-                                key={table._id}
-                                whileHover={isAvailable ? { y: -8, scale: 1.02 } : {}}
-                                onClick={() => isAvailable && setSelectedTable(table)}
-                                className="editorial-shadow"
-                                style={{
-                                    aspectRatio: index % 6 === 0 ? '4/5' : '1/1',
-                                    gridRow: index % 6 === 0 ? 'span 2' : 'auto',
-                                    background: isSelected ? 'var(--primary)' : 
-                                               !isAvailable ? 'var(--primary)' : 'var(--surface-container-lowest)',
-                                    borderRadius: '2rem',
-                                    padding: '1.5rem',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    justifyContent: 'space-between',
-                                    cursor: isAvailable ? 'pointer' : 'not-allowed',
-                                    transition: 'background 0.3s ease',
-                                    position: 'relative',
-                                    overflow: 'hidden'
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1 }}>
-                                    <div style={{ 
-                                        width: '40px', height: '40px', borderRadius: '12px', 
-                                        background: isAvailable && !isSelected ? 'var(--surface-container-low)' : 'rgba(255,255,255,0.2)',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                    }}>
-                                        <Users size={20} color={isAvailable && !isSelected ? 'var(--on-surface-variant)' : 'white'} />
-                                    </div>
-                                    <span style={{ 
-                                        fontSize: '0.75rem', fontWeight: 800, 
-                                        color: isAvailable && !isSelected ? 'var(--on-surface-variant)' : 'white',
-                                        opacity: isSelected || !isAvailable ? 1 : 0.6
-                                    }}>{table.capacity} PERS</span>
-                                </div>
-
-                                <div style={{ zIndex: 1 }}>
-                                    <h3 style={{ 
-                                        fontSize: '1.5rem', fontWeight: 800, margin: 0, 
-                                        color: isAvailable && !isSelected ? 'var(--on-surface)' : 'white' 
-                                    }}>Table {table.number}</h3>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                                        <span style={{ 
-                                            fontSize: '0.75rem', fontWeight: 700, 
-                                            color: isAvailable && !isSelected ? '#4CAF50' : 'white',
-                                        }}>
-                                            {isAvailable ? 'OPEN' : 'OCCUPIED'}
-                                        </span>
-                                        {isAvailable && (
-                                            <div className="pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4CAF50' }}></div>
-                                        )}
-                                        {!isAvailable && (
-                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.4)' }}></div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {isSelected && (
-                                    <div style={{ position: 'absolute', bottom: '1.5rem', right: '1.5rem', width: '32px', height: '32px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <Check size={20} color="var(--primary)" strokeWidth={3} />
-                                    </div>
-                                )}
-                            </motion.div>
-                        );
-                    })}
-                </div>
-
-                {/* Selection Summary Footer */}
-                {activeOrder === null && selectedTable && (
-                    <AnimatePresence>
-                        <motion.footer
-                            initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
-                            style={{ position: 'fixed', bottom: '2rem', left: '0', right: '0', maxWidth: '600px', margin: '0 auto', zIndex: 100 }}
-                        >
-                            <div className="editorial-shadow" style={{ background: 'var(--surface-container-lowest)', borderRadius: '2.5rem', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-                                <div style={{ flex: 1, paddingLeft: '1rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Sparkles size={16} color="var(--primary)" />
-                                        <span style={{ fontWeight: 800, fontSize: '0.925rem' }}>Table {selectedTable.number} Selected</span>
-                                    </div>
-                                    <p style={{ fontSize: '0.75rem', color: 'var(--on-surface-variant)', margin: 0 }}>Total Experience: ₹{total}</p>
-                                </div>
-                                <button onClick={handlePlaceOrder} className="btn-primary" style={{ padding: '1.25rem 2.5rem', borderRadius: '1.75rem', whiteSpace: 'nowrap' }} disabled={loading}>
-                                    {loading ? 'Initializing...' : 'Confirm Reservation'}
-                                </button>
+                <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
+                    <div style={{ marginBottom: '2.5rem' }}>
+                        <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '0.5rem', lineHeight: 1.1 }}>Find your <span style={{ color: 'var(--primary)' }}>perfect</span> corner</h2>
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4CAF50' }}></div>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--on-surface-variant)' }}>AVAILABLE</span>
                             </div>
-                        </motion.footer>
-                    </AnimatePresence>
-                )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)' }}></div>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--on-surface-variant)' }}>OCCUPIED</span>
+                            </div>
+                        </div>
+                    </div>
 
-                <style>{`
-                    .pulse { animation: pulse-animation 2s infinite; }
-                    @keyframes pulse-animation {
-                        0% { box-shadow: 0 0 0 0px rgba(76, 175, 80, 0.4); }
-                        100% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
-                    }
-                `}</style>
-            </main>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                        gap: '1.25rem'
+                    }}>
+                        {tables.map((table) => {
+                            const isAvailable = table.status === 'Available';
+                            const isSelected = selectedTable?._id === table._id;
+
+                            return (
+                                <motion.div
+                                    key={table._id}
+                                    whileTap={isAvailable ? { scale: 0.95 } : {}}
+                                    onClick={() => isAvailable && setSelectedTable(table)}
+                                    style={{
+                                        aspectRatio: '1/1',
+                                        background: isSelected ? 'var(--primary)' :
+                                            !isAvailable ? 'var(--surface-container-high)' : 'var(--surface-container-lowest)',
+                                        borderRadius: '2rem',
+                                        padding: '1.5rem',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'space-between',
+                                        cursor: isAvailable ? 'pointer' : 'not-allowed',
+                                        border: isSelected ? 'none' : '1px solid var(--surface-container-low)',
+                                        position: 'relative',
+                                        opacity: !isAvailable ? 0.6 : 1
+                                    }}
+                                    className={isAvailable ? "editorial-shadow" : ""}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{
+                                            width: '36px', height: '36px', borderRadius: '10px',
+                                            background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--surface-container-low)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                        }}>
+                                            <Users size={18} color={isSelected ? 'white' : 'var(--on-surface-variant)'} />
+                                        </div>
+                                        <span style={{ fontSize: '0.65rem', fontWeight: 900, color: isSelected ? 'white' : 'var(--on-surface-variant)' }}>
+                                            {table.capacity} SEATS
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <h3 style={{ fontSize: '1.25rem', fontWeight: 900, margin: 0, color: isSelected ? 'white' : 'var(--on-surface)' }}>
+                                            #{table.number}
+                                        </h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                                            <div className={isAvailable ? "pulse" : ""} style={{ width: '6px', height: '6px', borderRadius: '50%', background: isAvailable ? '#4CAF50' : 'var(--on-surface-variant)' }}></div>
+                                            <span style={{ fontSize: '0.6rem', fontWeight: 800, color: isSelected ? 'white' : 'var(--on-surface-variant)' }}>
+                                                {isAvailable ? 'READY' : 'BUSY'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {isSelected && (
+                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ position: 'absolute', bottom: '1rem', right: '1rem', background: 'white', borderRadius: '50%', padding: '4px' }}>
+                                            <Check size={16} color="var(--primary)" strokeWidth={4} />
+                                        </motion.div>
+                                    )}
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+
+                    {selectedTable && (
+                        <AnimatePresence>
+                            <motion.footer
+                                initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
+                                style={{ position: 'fixed', bottom: '1.5rem', left: '1rem', right: '1rem', zIndex: 100 }}
+                            >
+                                <div className="editorial-shadow" style={{
+                                    background: 'var(--on-surface)',
+                                    borderRadius: '2rem',
+                                    padding: '1rem 1.5rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    color: 'var(--surface)'
+                                }}>
+                                    <div>
+                                        <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 800, opacity: 0.6, textTransform: 'uppercase' }}>Selected spot</p>
+                                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900 }}>Table {selectedTable.number}</h4>
+                                    </div>
+                                    <button
+                                        onClick={handlePlaceOrder}
+                                        style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '1rem 2rem', borderRadius: '1.25rem', fontWeight: 900, cursor: 'pointer' }}
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Wait...' : 'Set Table'}
+                                    </button>
+                                </div>
+                            </motion.footer>
+                        </AnimatePresence>
+                    )}
+                </main>
             )}
+
+            <style>{`
+                .loader-spin { animation: spin 1s linear infinite; }
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                .pulse { animation: pulse-animation 2s infinite; }
+                @keyframes pulse-animation {
+                    0% { box-shadow: 0 0 0 0px rgba(76, 175, 80, 0.4); }
+                    100% { box-shadow: 0 0 0 8px rgba(76, 175, 80, 0); }
+                }
+            `}</style>
         </div>
     );
 };
