@@ -34,7 +34,7 @@ const TableSelection = () => {
 
         const fetchTables = async () => {
             try {
-                const url = adminId 
+                const url = adminId
                     ? `${import.meta.env.VITE_API_BASE_URL}/tables?adminId=${adminId}`
                     : `${import.meta.env.VITE_API_BASE_URL}/tables`;
                 const res = await axios.get(url);
@@ -51,10 +51,10 @@ const TableSelection = () => {
         setLoading(true);
         try {
             await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/orders/${activeOrder._id}/add-items`, {
-                items: items.map(i => ({ 
-                    dishId: i._id, 
-                    quantity: i.quantity, 
-                    price: Number(i.finalPrice || i.originalPrice || 0) 
+                items: items.map(i => ({
+                    dishId: i._id,
+                    quantity: i.quantity,
+                    price: Number(i.finalPrice || i.originalPrice || 0)
                 })),
                 totalAmount: total
             });
@@ -73,10 +73,10 @@ const TableSelection = () => {
         try {
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/orders`, {
                 tableNumber: selectedTable.number,
-                items: items.map(i => ({ 
-                    dishId: i._id, 
-                    quantity: i.quantity, 
-                    price: Number(i.finalPrice || i.originalPrice || 0) 
+                items: items.map(i => ({
+                    dishId: i._id,
+                    quantity: i.quantity,
+                    price: Number(i.finalPrice || i.originalPrice || 0)
                 })),
                 totalAmount: total,
                 adminId: adminId
