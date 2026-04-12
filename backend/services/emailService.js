@@ -25,8 +25,8 @@ const sendOTP = async (email, otp) => {
         console.log('OTP Email sent:', info.messageId);
         return true;
     } catch (error) {
-        console.error('Error sending OTP email:', error);
-        return false;
+        console.error('Nodemailer Error:', error);
+        throw error; // Re-throw so the auth route can capture it
     }
 };
 

@@ -90,7 +90,12 @@ router.post('/request-otp', async (req, res) => {
     } catch (err) {
         if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
         console.error("OTP Request Error:", err);
-        res.status(500).json({ message: 'Server error' });
+        // Relay the specific error message for debugging
+        res.status(500).json({ 
+            message: 'Server error during OTP request', 
+            error: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 });
 /**
