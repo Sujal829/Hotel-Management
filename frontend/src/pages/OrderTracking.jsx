@@ -152,7 +152,9 @@ const OrderTracking = () => {
     useEffect(() => {
         fetchOrders();
 
-        const socket = io(import.meta.env.VITE_SOCKET_URL || window.location.origin);
+        const socket = io(import.meta.env.VITE_SOCKET_URL || window.location.origin, {
+            transports: ['websocket', 'polling']
+        });
 
         // 3. Named handler for proper cleanup
         const onUpdate = () => {

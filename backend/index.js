@@ -28,15 +28,20 @@ const allowOrigin = (origin, callback) => {
     // Allow non-browser tools (no Origin header)
     if (!origin) return callback(null, true);
 
+    // Standardize origin by removing trailing slash
+    const cleanOrigin = origin.replace(/\/$/, '');
+
     if (!isDev) {
-        const allowed = process.env.FRONTEND_URL;
-        return callback(null, origin === allowed);
+        const allowed = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+        // Explicitly allow the primary Vercel domain as a fallback
+        const isVercel = cleanOrigin === 'https://hotel-management-mu-blush.vercel.app' || cleanOrigin === allowed;
+        return callback(null, isVercel);
     }
 
     // Dev: allow localhost Vite port changes
     const isLocal =
-        /^http:\/\/localhost:\d+$/.test(origin) ||
-        /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
+        /^http:\/\/localhost:\d+$/.test(cleanOrigin) ||
+        /^http:\/\/127\.0\.0\.1:\d+$/.test(cleanOrigin);
 
     return callback(null, isLocal);
 };
@@ -44,9 +49,12 @@ const allowOrigin = (origin, callback) => {
 const io = socketIo(server, {
     cors: {
         origin: allowOrigin,
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        credentials: true
-    }
+        methods: ["GET", "POST"],
+        credentials: true,
+        allowedHeaders: ["Content-Type", "Authorization"]
+    },
+    transports: ['websocket', 'polling'], // Explicitly support both for better connectivity
+    allowEIO3: true // Support older engine.io versions if necessary
 });
 
 // Connect to Database
