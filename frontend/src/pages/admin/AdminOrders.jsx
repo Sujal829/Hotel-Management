@@ -21,6 +21,8 @@ const socket = io(import.meta.env.VITE_SOCKET_URL || window.location.origin, {
     transports: ['websocket', 'polling'],
 });
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
 const AdminOrders = () => {
     const [orders, setOrders] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -55,7 +57,7 @@ const AdminOrders = () => {
     // --- Data Fetching Logic ---
     const fetchOrders = async () => {
         try {
-            const res = await axios.get('/api/orders');
+            const res = await axios.get(`${API_BASE}/orders`);
             const allOrders = res.data;
 
             // Filter out finished orders (Completed/Rejected)
@@ -91,7 +93,7 @@ const AdminOrders = () => {
     // --- Status & Payment Actions ---
     const updateStatus = async (id, status) => {
         try {
-            await axios.put(`/api/orders/${id}/status`, { status });
+            await axios.put(`${API_BASE}/orders/${id}/status`, { status });
             fetchOrders();
         } catch (err) {
             console.error("Status update error");
@@ -109,7 +111,7 @@ const AdminOrders = () => {
 
         try {
             // 1. Let the backend handle both closing the order and freeing the table:
-            await axios.post(`/api/orders/${receiptOrder._id}/bill`);
+            await axios.post(`${API_BASE}/orders/${receiptOrder._id}/bill`);
 
             // 3. Cleanup
             setReceiptOrder(null);

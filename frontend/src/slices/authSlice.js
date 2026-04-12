@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
 // Ensure this URL is correct (Check if it needs /api prefix)
-const API_URL = '/api/auth';
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/auth`;
 axios.defaults.withCredentials = true;
 
 const initialState = {
