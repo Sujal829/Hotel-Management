@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
 const { z } = require('zod');
+const emailService = require('../services/emailService');
 
 // --- Helper Functions ---
 
@@ -57,8 +58,8 @@ router.post('/request-otp', async (req, res) => {
 
         const currentOtp = generateRandomOTP();
 
-        // --- 1 MINUTE VALIDATION ---
-        const otpExpires = new Date(Date.now() + 1 * 60 * 1000); // Changed to 1 Minute
+        // --- 5 MINUTE VALIDATION ---
+        const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // Changed to 5 Minutes
 
         const updatedUser = await User.findOneAndUpdate(
             { mobile },
@@ -77,14 +78,15 @@ router.post('/request-otp', async (req, res) => {
         const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
         const timeOptions24 = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
 
-        console.log(`\n=========================================`);
-        console.log(`[AUTH] DB-STORED OTP FOR ${mobile}: ${updatedUser.otp}`);
-        console.log(`[AUTH] EXPIRES (12hr): ${otpExpires.toLocaleTimeString('en-US', timeOptions)}`);
-        console.log(`[AUTH] EXPIRES (24hr): ${otpExpires.toLocaleTimeString('en-GB', timeOptions24)}`);
-        console.log(`=========================================\n`);
+        console.log(`🔥 ================================================= 🔥\n`);
+        
+        // --- SEND OTP VIA EMAIL FOR ADMIN ---
+        if (role === 'admin' && email) {
+            await emailService.sendOTP(email, currentOtp);
+        }
 
         const tempToken = generateTempToken({ mobile });
-        res.status(200).json({ message: 'OTP sent successfully (Valid for 60s)', tempToken });
+        res.status(200).json({ message: 'OTP sent successfully (Valid for 60s)', tempToken, otp: currentOtp });
     } catch (err) {
         if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
         console.error("OTP Request Error:", err);

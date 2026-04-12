@@ -2,11 +2,11 @@
   "name": "digital-diner",
   "version": "1.0.0",
   "scripts": {
-    "start": "cd backend && npm run dev",
-    "client": "cd frontend && npm run dev",
-    "dev": "concurrently \"npm run start\" \"npm run client\"",
-    "seed": "cd backend && node seed.js",
-    "build": "cd frontend && npm run build"
+    "start": "node backend/index.js",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "build": "cd frontend && npm install && npm run build",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "seed": "cd backend && node seed.js"
   },
   "dependencies": {
     "concurrently": "^8.2.2"

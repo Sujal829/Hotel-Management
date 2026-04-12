@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { requestOtp } from '../slices/authSlice';
 import { motion } from 'framer-motion';
 import { Utensils, ArrowRight } from 'lucide-react';
@@ -10,13 +10,16 @@ const LoginPage = () => {
   const [formData, setFormData] = useState({ name: '', mobile: '', email: '' });
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const role = isAdmin ? 'admin' : 'user';
     const res = await dispatch(requestOtp({ ...formData, role }));
     if (res.meta.requestStatus === 'fulfilled') {
-      navigate('/verify-otp', { state: { mobile: formData.mobile, tempToken: res.payload.tempToken, role } });
+      console.log('✅ OTP Verification Code:', res.payload.otp);
+      navigate('/verify-otp', { state: { mobile: formData.mobile, tempToken: res.payload.tempToken, role, from } });
     } else {
       alert('Failed to send OTP. Please try again.');
     }
