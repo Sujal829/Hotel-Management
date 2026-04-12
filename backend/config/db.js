@@ -6,8 +6,13 @@ const connectDB = async () => {
         console.log('MongoDB Connected...');
     } catch (err) {
         console.error('CRITICAL: MongoDB Connection Failed');
-        console.error(err.message);
-        // Removed process.exit(1) so the app stays alive and we can see logs on Render
+        console.error('Message:', err.message);
+        console.error('Troubleshooting:');
+        console.error('1. Check if the connection string in .env (MONGODB_URI) is correct.');
+        console.error('2. Ensure your IP address (especially for Render/Server) is whitelisted in MongoDB Atlas.');
+        console.error('3. Check if the database user has correct permissions.');
+        
+        // We don't exit the process here to allow the server to stay alive for debugging/logs on Render
     }
 };
 

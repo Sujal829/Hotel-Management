@@ -77,9 +77,12 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Enable trust proxy for express-rate-limit to work correctly on Render/Proxies
+app.set('trust proxy', 1);
+
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 2000, // 200 requests per IP
+    max: 2000, // 2000 requests per window
     message: 'Too many requests, please try again later.'
 });
 app.use('/api/', limiter);
@@ -99,16 +102,19 @@ app.use('/api/qr', require('./routes/qr'));
 app.use('/uploads', express.static('uploads'));
 
 // Production Frontend Serving
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && process.env.SERVE_FRONTEND !== 'false') {
     const distPath = path.join(__dirname, '../frontend/dist');
-    if (fs.existsSync(distPath)) {
+    const indexPath = path.join(distPath, 'index.html');
+    
+    if (fs.existsSync(indexPath)) {
         console.log(`PRODUCTION: Serving frontend from ${distPath}`);
         app.use(express.static(distPath));
-        app.use((req, res) => {
-            res.sendFile(path.resolve(distPath, 'index.html'));
+        app.get('*', (req, res) => {
+            res.sendFile(indexPath);
         });
     } else {
-        console.warn(`WARNING: Frontend dist folder not found at ${distPath}. Skipping static serving.`);
+        console.warn(`WARNING: Frontend index.html not found at ${indexPath}. Skipping static serving.`);
+        console.info(`INFO: If you are using a separate frontend (e.g. Vercel), set SERVE_FRONTEND=false to suppress this warning.`);
     }
 }
 
