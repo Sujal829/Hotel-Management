@@ -28,22 +28,30 @@ const allowOrigin = (origin, callback) => {
     // Allow non-browser tools (no Origin header)
     if (!origin) return callback(null, true);
 
-    // Standardize origin by removing trailing slash
     const cleanOrigin = origin.replace(/\/$/, '');
+    const allowedEnv = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+    
+    // List of origins we ALWAYS trust
+    const whiteList = [
+        'https://hotel-management-mu-blush.vercel.app',
+        allowedEnv
+    ];
 
-    if (!isDev) {
-        const allowed = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-        // Explicitly allow the primary Vercel domain as a fallback
-        const isVercel = cleanOrigin === 'https://hotel-management-mu-blush.vercel.app' || cleanOrigin === allowed;
-        return callback(null, isVercel);
+    const isAllowed = whiteList.includes(cleanOrigin) || 
+                     /^http:\/\/localhost:\d+$/.test(cleanOrigin) ||
+                     /^http:\/\/127\.0\.0\.1:\d+$/.test(cleanOrigin);
+
+    // Logging only on Render/Production to avoid cluttering local dev but helping us see the error
+    if (process.env.RENDER || !isDev) {
+        console.log(`CORS Check: Origin [${origin}] -> Decision [${isAllowed ? 'ALLOWED' : 'DENIED'}]`);
     }
 
-    // Dev: allow localhost Vite port changes
-    const isLocal =
-        /^http:\/\/localhost:\d+$/.test(cleanOrigin) ||
-        /^http:\/\/127\.0\.0\.1:\d+$/.test(cleanOrigin);
-
-    return callback(null, isLocal);
+    if (isAllowed) {
+        return callback(null, true);
+    } else {
+        console.warn(`CORS REJECTED: ${origin}`);
+        return callback(null, false);
+    }
 };
 
 const io = socketIo(server, {
