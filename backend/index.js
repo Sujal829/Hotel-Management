@@ -8,6 +8,17 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const connectDB = require('./config/db');
+const fs = require('fs');
+
+// Log essential config check
+const requiredEnv = ['MONGODB_URI', 'JWT_SECRET'];
+requiredEnv.forEach(env => {
+    if (!process.env[env]) {
+        console.warn(`WARNING: Missing environment variable: ${env}`);
+    } else {
+        console.log(`CONFIG: ${env} is set`);
+    }
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -73,10 +84,16 @@ app.use('/uploads', express.static('uploads'));
 
 // Production Frontend Serving
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../frontend/dist')));
-    app.use((req, res) => {
-        res.sendFile(path.resolve(__dirname, '../frontend/dist', 'index.html'));
-    });
+    const distPath = path.join(__dirname, '../frontend/dist');
+    if (fs.existsSync(distPath)) {
+        console.log(`PRODUCTION: Serving frontend from ${distPath}`);
+        app.use(express.static(distPath));
+        app.use((req, res) => {
+            res.sendFile(path.resolve(distPath, 'index.html'));
+        });
+    } else {
+        console.warn(`WARNING: Frontend dist folder not found at ${distPath}. Skipping static serving.`);
+    }
 }
 
 // Socket handle
