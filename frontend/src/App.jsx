@@ -46,9 +46,13 @@ const AppContent = () => {
   useEffect(() => {
     if (!isAuthenticated || !user) return;
     
-    // In production we proxy /socket.io through Vite, or rely on same origin
+    // In production we rely on VITE_SOCKET_URL
     const socketURL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.MODE === 'development' ? 'http://127.0.0.1:5000' : window.location.origin);
-    const socket = io(socketURL);
+    const socket = io(socketURL, {
+      transports: ['websocket', 'polling'],
+      secure: true,
+      rejectUnauthorized: false
+    });
     
     if (user.role === 'admin') {
       socket.emit('join_admin', user._id);
