@@ -4,6 +4,7 @@ const initialState = {
   items: [],
   isOpen: false,
   adminId: null, // Track which admin this cart belongs to
+  tableNumber: null, // Track which table the user is at (from QR)
 };
 
 const cartSlice = createSlice({
@@ -33,9 +34,12 @@ const cartSlice = createSlice({
     },
     toggleCart: (state) => {
       state.isOpen = !state.isOpen;
+    },
+    setTableNumber: (state, action) => {
+      state.tableNumber = action.payload;
     }
   },
 });
 
-export const { setAdminId, addToCart, removeFromCart, updateQuantity, clearCart, toggleCart } = cartSlice.actions;
+export const { setAdminId, addToCart, removeFromCart, updateQuantity, clearCart, toggleCart, setTableNumber } = cartSlice.actions;
 export default cartSlice.reducer;

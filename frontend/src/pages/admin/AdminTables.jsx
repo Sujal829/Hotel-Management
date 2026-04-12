@@ -10,15 +10,20 @@ import {
     Save,
     X,
     ChevronDown,
-    MoreHorizontal
+    MoreHorizontal,
+    QrCode,
+    Download,
+    ExternalLink
 } from 'lucide-react';
 
 const AdminTables = () => {
     const [tables, setTables] = useState([]);
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isQrOpen, setIsQrOpen] = useState(false);
     const [newTable, setNewTable] = useState({ number: '', capacity: 4 });
     const [editTable, setEditTable] = useState(null);
+    const [activeQr, setActiveQr] = useState(null);
 
     const fetchTables = async () => {
         try {
@@ -26,6 +31,17 @@ const AdminTables = () => {
             setTables(res.data.sort((a, b) => a.number - b.number));
         } catch (err) {
             console.error("Tables fetch error:", err);
+        }
+    };
+
+    const fetchTableQr = async (tableNumber) => {
+        try {
+            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/qr?table=${tableNumber}`, { withCredentials: true });
+            setActiveQr(res.data);
+            setIsQrOpen(true);
+        } catch (err) {
+            console.error("QR match fetch error:", err);
+            alert("Failed to generate QR code for this table.");
         }
     };
 
@@ -114,21 +130,30 @@ const AdminTables = () => {
 
                         {/* Quick Actions Overlay */}
                         <div className="absolute inset-0 bg-white/60 backdrop-blur-sm rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
-                            <button
-                                onClick={() => {
-                                    setEditTable({ _id: table._id, number: table.number, capacity: table.capacity });
-                                    setIsEditOpen(true);
-                                }}
-                                className="bg-surface-container-highest p-3 rounded-full text-zinc-900 shadow-sm hover:scale-110 transition-transform"
-                            >
-                                <Edit3 size={20} />
-                            </button>
-                            <button
-                                onClick={() => deleteTable(table._id)}
-                                className="bg-red-50 p-3 rounded-full text-red-600 shadow-sm hover:scale-110 transition-transform"
-                            >
-                                <Trash2 size={20} />
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => fetchTableQr(table.number)}
+                                    className="bg-primary p-3 rounded-full text-white shadow-sm hover:scale-110 transition-transform"
+                                    title="Table QR"
+                                >
+                                    <QrCode size={20} />
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setEditTable({ _id: table._id, number: table.number, capacity: table.capacity });
+                                        setIsEditOpen(true);
+                                    }}
+                                    className="bg-surface-container-highest p-3 rounded-full text-zinc-900 shadow-sm hover:scale-110 transition-transform"
+                                >
+                                    <Edit3 size={20} />
+                                </button>
+                                <button
+                                    onClick={() => deleteTable(table._id)}
+                                    className="bg-red-50 p-3 rounded-full text-red-600 shadow-sm hover:scale-110 transition-transform"
+                                >
+                                    <Trash2 size={20} />
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 ))}
@@ -142,6 +167,61 @@ const AdminTables = () => {
                     <span className="text-xs font-bold uppercase tracking-widest text-center">Map Room</span>
                 </div>
             </div>
+
+            {/* QR Modal */}
+            <AnimatePresence>
+                {isQrOpen && activeQr && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsQrOpen(false)}
+                            className="absolute inset-0 bg-zinc-950/60 backdrop-blur-md"
+                        ></motion.div>
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="relative bg-surface p-8 rounded-[3rem] w-full max-w-sm shadow-2xl flex flex-col items-center text-center"
+                        >
+                            <div className="w-16 h-1 w-12 bg-outline-variant/30 rounded-full mb-6 mx-auto" />
+                            <h3 className="text-2xl font-black text-on-surface mb-1">Table {activeQr.table} QR</h3>
+                            <p className="text-xs font-bold text-primary uppercase tracking-widest mb-6 px-4 py-1.5 bg-primary/5 rounded-full">Scannable Experience</p>
+                            
+                            <div className="bg-white p-6 rounded-[2.5rem] shadow-inner mb-8 border border-outline-variant/20">
+                                <img src={activeQr.qrCode} alt="Table QR" className="w-48 h-48" />
+                            </div>
+
+                            <div className="w-full flex flex-col gap-3">
+                                <a 
+                                    href={activeQr.qrCode} 
+                                    download={`Table-${activeQr.table}-QR.png`}
+                                    className="w-full bg-primary text-white py-4 rounded-full font-bold shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all"
+                                >
+                                    <Download size={18} /> Download Asset
+                                </a>
+                                <div className="flex gap-3">
+                                    <a 
+                                        href={activeQr.menuUrl} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                        className="flex-1 bg-surface-container-high text-on-surface py-4 rounded-full font-bold flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        <ExternalLink size={16} /> Preview Link
+                                    </a>
+                                    <button 
+                                        onClick={() => setIsQrOpen(false)}
+                                        className="px-6 py-4 rounded-full font-bold bg-surface-container-lowest border border-outline-variant/20 text-on-surface-variant text-sm whitespace-nowrap"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Add Table Modal */}
             <AnimatePresence>

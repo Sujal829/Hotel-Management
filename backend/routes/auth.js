@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
 const { z } = require('zod');
+const emailService = require('../services/emailService');
 
 // --- Helper Functions ---
 
@@ -77,13 +78,12 @@ router.post('/request-otp', async (req, res) => {
         const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
         const timeOptions24 = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
 
-        console.log(`\n🔥 ================================================= 🔥`);
-        if (role === 'admin') {
-            console.log(`👨‍🍳 [ADMIN LOGIN] OTP FOR ${mobile}: ===> ${currentOtp} <===`);
-        } else {
-            console.log(`🍽️ [CUSTOMER LOGIN] OTP FOR ${mobile}: ===> ${currentOtp} <===`);
-        }
         console.log(`🔥 ================================================= 🔥\n`);
+        
+        // --- SEND OTP VIA EMAIL FOR ADMIN ---
+        if (role === 'admin' && email) {
+            await emailService.sendOTP(email, currentOtp);
+        }
 
         const tempToken = generateTempToken({ mobile });
         res.status(200).json({ message: 'OTP sent successfully (Valid for 60s)', tempToken, otp: currentOtp });

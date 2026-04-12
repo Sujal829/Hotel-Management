@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useLocation, Navigate } from 'react-router-dom';
+import { useSearchParams, useParams, useLocation, Navigate } from 'react-router-dom';
 import { fetchPublicMenu } from '../slices/menuSlice';
-import { addToCart, setAdminId } from '../slices/cartSlice';
+import { addToCart, setAdminId, setTableNumber } from '../slices/cartSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Leaf, Flame, Sparkles, MapPin } from 'lucide-react';
 
 const UserMenu = () => {
     const { adminId: urlAdminId } = useParams();
+    const [searchParams] = useSearchParams();
     const dispatch = useDispatch();
     const location = useLocation();
     const { isAuthenticated } = useSelector(state => state.auth);
@@ -30,8 +31,14 @@ const UserMenu = () => {
         if (urlAdminId) {
             dispatch(setAdminId(urlAdminId));
             dispatch(fetchPublicMenu(urlAdminId));
+            
+            // Capture table number from query param
+            const table = searchParams.get('table');
+            if (table) {
+                dispatch(setTableNumber(table));
+            }
         }
-    }, [dispatch, urlAdminId]);
+    }, [dispatch, urlAdminId, searchParams]);
 
     const filteredDishes = dishes.filter(dish => {
         const matchesCategory = selectedCategory === 'All' || dish?.category?.name === selectedCategory;

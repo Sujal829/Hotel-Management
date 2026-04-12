@@ -11,7 +11,7 @@ const TableSelection = () => {
     const [selectedTable, setSelectedTable] = useState(null);
     const [loading, setLoading] = useState(false);
     const [activeOrder, setActiveOrder] = useState(undefined);
-    const { items, adminId } = useSelector(state => state.cart);
+    const { items, adminId, tableNumber } = useSelector(state => state.cart);
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
@@ -39,12 +39,20 @@ const TableSelection = () => {
                     : `${import.meta.env.VITE_API_BASE_URL}/tables`;
                 const res = await axios.get(url);
                 setTables(res.data);
+                
+                // Auto-select table if tableNumber exists in Redux (from QR scan)
+                if (tableNumber && res.data.length > 0) {
+                    const matchedTable = res.data.find(t => t.number.toString() === tableNumber.toString());
+                    if (matchedTable && matchedTable.status === 'Available') {
+                        setSelectedTable(matchedTable);
+                    }
+                }
             } catch (err) {
                 console.error("Failed to fetch tables", err);
             }
         };
         fetchTables();
-    }, []);
+    }, [adminId, tableNumber]);
 
     const handleReorder = async () => {
         if (!activeOrder) return;
